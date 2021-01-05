@@ -13,6 +13,8 @@ namespace BenMajor\ExchangeRatesAPI;
 
 class ExchangeRatesAPI
 {
+    # Fetch date
+    private $fetchDate;
 
     # Date from which to request historic rates:
     private $dateFrom;
@@ -42,7 +44,7 @@ class ExchangeRatesAPI
     private $_currencies = [
         'USD', 'GBP', 'EUR', 'JPY', 'BGN', 'CZK', 'DKK', 'HUF', 'PLN', 'RON',
         'SEK', 'CHF', 'ISK', 'NOK', 'HRK', 'RUB', 'TRY', 'AUD', 'BRL', 'CAD',
-        'CNY', 'HKD', 'IDR', 'ILS', 'INR', 'KRW', 'MXN', 'MYR', 'NZD', 'BHP',
+        'CNY', 'HKD', 'IDR', 'ILS', 'INR', 'KRW', 'MXN', 'MYR', 'NZD', 'PHP',
         'SGD', 'THB', 'ZAR'
     ];
 
@@ -65,6 +67,12 @@ class ExchangeRatesAPI
     /*         GETTERS          */
     /*                          */
     /****************************/
+
+    # Get the fetch date date:
+    public function getFetchDate()
+    {
+        return $this->dateFrom;
+    }
 
     # Get the "from" date:
     public function getDateFrom()
@@ -101,6 +109,20 @@ class ExchangeRatesAPI
     /*  SETTERS / DATA METHODS  */
     /*                          */
     /****************************/
+
+    # set the fetch date
+    public function setFetchDate( string $date )
+    {
+        if( $this->validateDateFormat($date) )
+        {
+            $this->fetchDate = $date;
+
+            # Return object to preserve method-chaining:
+            return $this;
+        }
+
+        throw new Exception( $this->_errors['format.invalid_date'] );
+    }
 
     # Add a date-from:
     public function addDateFrom( string $from )
@@ -435,7 +457,14 @@ class ExchangeRatesAPI
         $params = [ ];
 
         # Set the relevant endpoint:
-        $endpoint = (is_null($this->getFromDate()) ? 'lastest' : 'history');
+        if( is_null($this->dateFrom) )
+        {
+            $endpoint = is_null($this->fetchDate) ? 'latest' : $this->fetchDate;
+        }
+        else
+        {
+            $endpoint = 'history';
+        }
 
         # Add dateFrom if specified:
         if( ! is_null($this->getDateFrom()) )
