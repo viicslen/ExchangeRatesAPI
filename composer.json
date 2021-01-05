@@ -1,10 +1,10 @@
 {
-    "name": "benmajor/exchange-rates-api",
+    "name": "fmtod/exchange-rates-api",
     "description": "An unofficial SDK for the ExchangeRatesAPI. (https://exchangeratesapi.io/)",
     "type": "library",
     "require": {
         "php": ">= 7.0",
-        "guzzlehttp/guzzle": "^6.3@dev"
+        "guzzlehttp/guzzle": "^6.3@dev|~7"
     },
     "license": "MIT",
     "authors": [
