@@ -9,7 +9,7 @@
  * @license   https://github.com/benmajor/PHP-ExchangeRatesAPI/blob/master/LICENSE (MIT License)
  */
 
-namespace BenMajor\ExchangeRatesAPI;
+namespace FmTod\ExchangeRatesAPI;
 
 class ExchangeRatesAPI
 {

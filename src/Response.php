@@ -1,6 +1,6 @@
 <?php
 
-namespace BenMajor\ExchangeRatesAPI;
+namespace FmTod\ExchangeRatesAPI;
 
 class Response
 {
