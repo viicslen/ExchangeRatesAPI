@@ -18,7 +18,7 @@ class Response
     private $baseCurrency;
     
     private $rates = [ ];
-    
+
     function __construct( \GuzzleHttp\Psr7\Response $response = null )
     {
         $this->response = $response;
@@ -26,6 +26,10 @@ class Response
         $this->headers    = $response->getHeaders();
         $this->bodyRaw    = (string) $response->getBody();
         $this->body       = json_decode( $this->bodyRaw );
+
+        if (!$this->body->success) {
+            throw new Exception($this->body->error->info, $this->body->error->code);
+        }
         
         # Set our properties:
         $this->statusCode   = $response->getStatusCode();
@@ -46,7 +50,7 @@ class Response
         return (int) $this->statusCode;
     }
     
-    #ÊGet the timestamp of the request:
+    #ï¿½Get the timestamp of the request:
     public function getTimestamp()
     {
         return $this->timestamp;
@@ -84,7 +88,7 @@ class Response
         return null;
     }
     
-    #ÊConvert the response to JSON:
+    #ï¿½Convert the response to JSON:
     public function toJSON()
     {
         return json_encode([

@@ -31,6 +31,9 @@ class ExchangeRatesAPI
     # Contains our Guzzle client:
     private $client;
 
+    # API access key
+    private $accessKey;
+
     # The URL of the API:
     private $apiURL = 'https://api.exchangeratesapi.io/';
 
@@ -57,9 +60,10 @@ class ExchangeRatesAPI
         'format.invalid_rounding'      => 'Rounding precision must be specified as a numeric value.'
     ];
 
-    function __construct(  )
+    function __construct($accessKey = null)
     {
         $this->client = new \GuzzleHttp\Client([ 'base_uri' => $this->apiURL ]);
+        $this->setAccessKey($accessKey);
     }
 
     /****************************/
@@ -67,6 +71,12 @@ class ExchangeRatesAPI
     /*         GETTERS          */
     /*                          */
     /****************************/
+
+    # Get the API access key:
+    public function getAccessKey()
+    {
+        return $this->accessKey;
+    }
 
     # Get the fetch date date:
     public function getFetchDate()
@@ -110,7 +120,13 @@ class ExchangeRatesAPI
     /*                          */
     /****************************/
 
-    # set the fetch date
+    # Set the access key
+    public function setAccessKey( string $accessKey )
+    {
+        $this->accessKey = $accessKey;
+    }
+
+    # Set the fetch date
     public function setFetchDate( string $date )
     {
         if( $this->validateDateFormat($date) )
@@ -293,7 +309,7 @@ class ExchangeRatesAPI
     }
 
     # Send off the request:
-    public function lastest( $returnJSON = false, $parseJSON = true )
+    public function latest($returnJSON = false, $parseJSON = true )
     {
         # Build the URL:
         $params = [ ];
@@ -312,6 +328,13 @@ class ExchangeRatesAPI
         {
             $params['symbols'] = $this->getRates(',');
         }
+
+        # Is the access token set
+        if( ! $this->accessKey )
+        {
+            throw new Exception('Missing required access key.');
+        }
+        $params['access_key'] = $this->getAccessKey();
 
         # Begin the sending:
         try
@@ -360,6 +383,13 @@ class ExchangeRatesAPI
         {
             $params['symbols'] = $this->getRates(',');
         }
+
+        # Is the access token set
+        if( ! $this->accessKey )
+        {
+            throw new Exception('Missing required access key.');
+        }
+        $params['access_key'] = $this->getAccessKey();
 
         # Begin the sending:
         try
@@ -422,6 +452,13 @@ class ExchangeRatesAPI
         {
             $params['symbols'] = $this->getRates(',');
         }
+
+        # Is the access token set
+        if( ! $this->accessKey )
+        {
+            throw new Exception('Missing required access key.');
+        }
+        $params['access_key'] = $this->getAccessKey();
 
         # Begin the sending:
         try
@@ -492,6 +529,13 @@ class ExchangeRatesAPI
             $params['symbols'] = $this->getRates(',');
         }
 
+        # Is the access token set
+        if( ! $this->accessKey )
+        {
+            throw new Exception('Missing required access key.');
+        }
+        $params['access_key'] = $this->getAccessKey();
+
         # Begin the sending:
         try
         {
@@ -521,7 +565,7 @@ class ExchangeRatesAPI
 
     /****************************/
     /*                          */
-    /*  INTERNAL VERIFICTATION  */
+    /*  INTERNAL VERIFICATION  */
     /*                          */
     /****************************/
 
