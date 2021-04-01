@@ -34,11 +34,20 @@ class ExchangeRatesAPI
     # API access key
     private $accessKey;
 
+    # The http Etag header for retrieving new rates
+    private $etag;
+
+    # The modified since header for retrieving new rates
+    private $modifiedSince;
+
     # The URL of the API:
     private $apiURL = 'https://api.exchangeratesapi.io/v1/';
 
     # Regular Expression for the date:
     private $dateRegExp = '/^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[1-2][0-9]|3[0-1])$/';
+
+    # Regular Expression for the modified since header:
+    private $modifiedSinceRegExp = '/^[A-za-z]{3}, (0[1-9]|[1-2]\d|3[0-1]) [A-za-z]{3} \d{4} \d{2}:\d{2}:\d{2} [A-za-z]{3}$/';
 
     # Regular Expression for the currency:
     private $currencyRegExp = '/^[A-Z]{3}$/';
@@ -53,6 +62,7 @@ class ExchangeRatesAPI
 
     # Error messages:
     private $_errors = [
+        'format.invalid_etag'          => 'The specified etag and modified date combination is invalid.',
         'format.invalid_date'          => 'The specified date is invalid. Please use ISO 8601 notation (e.g. YYYY-MM-DD).',
         'format.invalid_currency_code' => 'The specified currency code is invalid. Please use ISO 4217 notation (e.g. EUR).',
         'format.unsupported_currency'  => 'The specified currency code is not currently supported.',
@@ -124,6 +134,30 @@ class ExchangeRatesAPI
     public function setAccessKey( string $accessKey )
     {
         $this->accessKey = $accessKey;
+
+        return $this;
+    }
+
+    # Set the Etag headers
+    public function setEtag($etag, $modifiedSince)
+    {
+        if ($this->validateModifiedSinceFormat($modifiedSince)) {
+            $this->etag = $etag;
+            $this->modifiedSince = $modifiedSince;
+
+            return $this;
+        }
+
+        throw new Exception( $this->_errors['format.invalid_etag'] );
+    }
+
+    # remove the Etag headers
+    public function removeEtag()
+    {
+        $this->etag = null;
+        $this->modifiedSince = null;
+
+        return $this;
     }
 
     # Set the fetch date
@@ -138,6 +172,14 @@ class ExchangeRatesAPI
         }
 
         throw new Exception( $this->_errors['format.invalid_date'] );
+    }
+
+    # Remove the fetch date
+    public function removeFetchDate()
+    {
+        $this->fetchDate = null;
+
+        return $this;
     }
 
     # Add a date-from:
@@ -311,196 +353,40 @@ class ExchangeRatesAPI
     # Send off the request:
     public function latest($returnJSON = false, $parseJSON = true )
     {
-        # Build the URL:
-        $params = [ ];
-
-        # Set the relevant endpoint:
-        $endpoint = 'latest';
-
-        # Set the base currency:
-        if( ! is_null($this->getBaseCurrency()) )
-        {
-            $params['base'] = $this->getBaseCurrency();
-        }
-
-        # Are there any rates set?
-        if( count($this->rates) > 0 )
-        {
-            $params['symbols'] = $this->getRates(',');
-        }
-
-        # Is the access token set
-        if( ! $this->accessKey )
-        {
-            throw new Exception('Missing required access key.');
-        }
-        $params['access_key'] = $this->getAccessKey();
-
-        # Begin the sending:
-        try
-        {
-            $guzzleResponse = $this->client->request('GET', $endpoint, [ 'query' => $params ]);
-
-            $response = new Response( $guzzleResponse );
-
-            if( $returnJSON )
-            {
-                $json = $response->toJSON();
-
-                if( $parseJSON )
-                {
-                    return json_decode( $json );
-                }
-
-                return $json;
-            }
-
-            return $response;
-        }
-        catch( \Exception $e )
-        {
-            throw new Exception( $e->getMessage() );
-        }
+        return $this->fetch($returnJSON, $parseJSON, 'latest');
     }
 
     # Send off the request:
     public function getFromDate(string $date, $returnJSON = false, $parseJSON = true )
     {
-        # Build the URL:
-        $params = [ ];
-
         # Set the relevant endpoint:
         $endpoint = date('Y-m-d', strtotime($date));
 
-        # Set the base currency:
-        if( ! is_null($this->getBaseCurrency()) )
-        {
-            $params['base'] = $this->getBaseCurrency();
-        }
-
-        # Are there any rates set?
-        if( count($this->rates) > 0 )
-        {
-            $params['symbols'] = $this->getRates(',');
-        }
-
-        # Is the access token set
-        if( ! $this->accessKey )
-        {
-            throw new Exception('Missing required access key.');
-        }
-        $params['access_key'] = $this->getAccessKey();
-
-        # Begin the sending:
-        try
-        {
-            $guzzleResponse = $this->client->request('GET', $endpoint, [ 'query' => $params ]);
-
-            $response = new Response( $guzzleResponse );
-
-            if( $returnJSON )
-            {
-                $json = $response->toJSON();
-
-                if( $parseJSON )
-                {
-                    return json_decode( $json );
-                }
-
-                return $json;
-            }
-
-            return $response;
-        }
-        catch( \Exception $e )
-        {
-            throw new Exception( $e->getMessage() );
-        }
+        return $this->fetch($returnJSON, $parseJSON, $endpoint);
     }
 
     # Send off the request:
     public function history( $returnJSON = false, $parseJSON = true )
     {
-        # Build the URL:
-        $params = [ ];
-
-        # Set the relevant endpoint:
-        $endpoint = 'history';
-
-        # Add dateFrom if specified:
-        if( ! is_null($this->getDateFrom()) )
-        {
-            $params['start_at'] = $this->getDateFrom();
-        }
-        else throw new Exception('Missing required property [DateFrom]');
-
-        # Add a dateTo:
-        if( ! is_null($this->getDateTo()) )
-        {
-            $params['end_at'] = $this->getDateTo();
-        }
-        else throw new Exception('Missing required property [DateTo]');
-
-        # Set the base currency:
-        if( ! is_null($this->getBaseCurrency()) )
-        {
-            $params['base'] = $this->getBaseCurrency();
-        }
-
-        # Are there any rates set?
-        if( count($this->rates) > 0 )
-        {
-            $params['symbols'] = $this->getRates(',');
-        }
-
-        # Is the access token set
-        if( ! $this->accessKey )
-        {
-            throw new Exception('Missing required access key.');
-        }
-        $params['access_key'] = $this->getAccessKey();
-
-        # Begin the sending:
-        try
-        {
-            $guzzleResponse = $this->client->request('GET', $endpoint, [ 'query' => $params ]);
-
-            $response = new Response( $guzzleResponse );
-
-            if( $returnJSON )
-            {
-                $json = $response->toJSON();
-
-                if( $parseJSON )
-                {
-                    return json_decode( $json );
-                }
-
-                return $json;
-            }
-
-            return $response;
-        }
-        catch( \Exception $e )
-        {
-            throw new Exception( $e->getMessage() );
-        }
+        $this->fetch($returnJSON, $parseJSON, 'history');
     }
 
     # Send off the request:
-    public function fetch( $returnJSON = false, $parseJSON = true )
+    public function fetch( $returnJSON = false, $parseJSON = true, $endpoint = null )
     {
         # Build the URL:
         $params = [ ];
 
         # Set the relevant endpoint:
-        if( is_null($this->dateFrom) )
-        {
-            $endpoint = is_null($this->fetchDate) ? 'latest' : $this->fetchDate;
-        }
-        else
-        {
-            $endpoint = 'history';
+        if (is_null($endpoint)) {
+            if( is_null($this->dateFrom) )
+            {
+                $endpoint = is_null($this->fetchDate) ? 'latest' : $this->fetchDate;
+            }
+            else
+            {
+                $endpoint = 'history';
+            }
         }
 
         # Add dateFrom if specified:
@@ -508,14 +394,18 @@ class ExchangeRatesAPI
         {
             $params['start_at'] = $this->getDateFrom();
         }
-        else throw new Exception('Missing required property [DateFrom]');
+        elseif ($endpoint === 'history') {
+            throw new Exception('Missing required property [DateFrom]');
+        }
 
         # Add a dateTo:
         if( ! is_null($this->getDateTo()) )
         {
             $params['end_at'] = $this->getDateTo();
         }
-        else throw new Exception('Missing required property [DateTo]');
+        elseif ($endpoint === 'history') {
+            throw new Exception('Missing required property [DateTo]');
+        }
 
         # Set the base currency:
         if( ! is_null($this->getBaseCurrency()) )
@@ -536,10 +426,19 @@ class ExchangeRatesAPI
         }
         $params['access_key'] = $this->getAccessKey();
 
+        $options = [ 'query' => $params ];
+
+        if ($this->etag) {
+            $options['headers'] = [
+                'If-None-Match' => $this->etag,
+                'If-Modified-Since' => $this->modifiedSince,
+            ];
+        }
+
         # Begin the sending:
         try
         {
-            $guzzleResponse = $this->client->request('GET', $endpoint, [ 'query' => $params ]);
+            $guzzleResponse = $this->client->request('GET', $endpoint, $options);
 
             $response = new Response( $guzzleResponse );
 
@@ -575,6 +474,17 @@ class ExchangeRatesAPI
         if( !is_null($date) )
         {
             return preg_match( $this->dateRegExp, $date);
+        }
+
+        return false;
+    }
+
+    # Validate a date is in the correct format:
+    private function validateModifiedSinceFormat( string $date = null )
+    {
+        if( !is_null($date) )
+        {
+            return preg_match( $this->modifiedSinceRegExp, $date);
         }
 
         return false;
