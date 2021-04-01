@@ -15,17 +15,18 @@ class Response
     # Properties:
     private $statusCode;
     private $timestamp;
+    private $date;
     private $baseCurrency;
     
-    private $rates = [ ];
+    private $rates;
 
-    function __construct( \GuzzleHttp\Psr7\Response $response = null )
+    function __construct( \GuzzleHttp\Psr7\Response $response )
     {
         $this->response = $response;
         
         $this->headers    = $response->getHeaders();
         $this->bodyRaw    = (string) $response->getBody();
-        $this->body       = json_decode( $this->bodyRaw );
+        $this->body       = json_decode( $this->bodyRaw, false );
 
         if (!$this->body->success) {
             throw new Exception($this->body->error->info, $this->body->error->code);
@@ -34,6 +35,7 @@ class Response
         # Set our properties:
         $this->statusCode   = $response->getStatusCode();
         $this->timestamp    = date('c');
+        $this->date         = $this->body->date;
         $this->baseCurrency = $this->body->base;
         $this->rates        = $this->body->rates;
     }
@@ -43,17 +45,35 @@ class Response
     /*         GETTERS          */
     /*                          */
     /****************************/
-    
+
+    # Get Guzzle response object:
+    public function getRawResponse()
+    {
+        return $this->response;
+    }
+
     # Get the status code:
     public function getStatusCode()
     {
         return (int) $this->statusCode;
     }
+
+    # Get the response headers:
+    public function getHeaders()
+    {
+        return $this->headers;
+    }
     
-    #�Get the timestamp of the request:
+    # Get the timestamp of the request:
     public function getTimestamp()
     {
         return $this->timestamp;
+    }
+
+    # Get the date of the rates:
+    public function getDate()
+    {
+        return $this->date;
     }
     
     # Get the base currency:
@@ -88,7 +108,7 @@ class Response
         return null;
     }
     
-    #�Convert the response to JSON:
+    # Convert the response to JSON:
     public function toJSON()
     {
         return json_encode([
