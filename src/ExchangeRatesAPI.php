@@ -317,6 +317,14 @@ class ExchangeRatesAPI
         return $this;
     }
 
+    # Remove all currencies at once
+    public function clearRates()
+    {
+        $this->rates = [];
+
+        return $this;
+    }
+
     /****************************/
     /*                          */
     /*   API FUNCTION CALLS     */
