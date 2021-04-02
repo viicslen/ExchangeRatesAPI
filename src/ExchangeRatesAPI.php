@@ -70,8 +70,12 @@ class ExchangeRatesAPI
         'format.invalid_rounding'      => 'Rounding precision must be specified as a numeric value.'
     ];
 
-    function __construct($accessKey = null)
+    function __construct($accessKey = null, $sslEnabled = true)
     {
+        if (!$sslEnabled) {
+            $this->apiURL = 'http://api.exchangeratesapi.io/v1/';
+        }
+
         $this->client = new \GuzzleHttp\Client([ 'base_uri' => $this->apiURL ]);
         $this->setAccessKey($accessKey);
     }
@@ -463,6 +467,10 @@ class ExchangeRatesAPI
             }
 
             return $response;
+        }
+        catch ( \GuzzleHttp\Exception\ClientException $e ) {
+            $body = json_decode($e->getResponse()->getBody()->getContents(), true);
+            throw new Exception('ExchangeRatesAPI: '.$body['error']['message'], $e->getCode());
         }
         catch( \Exception $e )
         {
